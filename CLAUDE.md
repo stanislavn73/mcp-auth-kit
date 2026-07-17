@@ -21,7 +21,7 @@ Out of scope for v1: multiple OAuth providers, non-Python servers, runtime proxy
 
 ## Tech decisions
 - Python 3.12+, `uv` for env/deps, `ruff` + `mypy` strict
-- Target framework: FastMCP (official MCP Python SDK) middleware
+- Target framework: standalone `fastmcp` 3.x middleware (the actively-developed package with the Middleware + OAuth surface — chosen over the official `mcp` SDK's embedded FastMCP; see docs/design/001-auth-middleware.md)
 - Tests: pytest; the self-test harness doubles as our own test fixtures
 - License: MIT or Apache 2.0
 - CI: GitHub Actions from day one
