@@ -98,3 +98,27 @@ case `check` must flag.
 
 Multiple providers, non-Python servers, runtime proxying, prompt-injection
 detection.
+
+## Implementation notes (as built)
+
+Probing `fastmcp` 3.4.4 refined the gap above. The base `OAuthProvider` leaves
+`revoke_token` abstract, but the **concrete `GitHubProvider` / `OAuthProxy`
+already implement** the authorize/token/refresh dance, upstream verification,
+the RFC 7009 revocation *endpoint*, and consent. So the kit **composes** the
+GitHub provider instead of reimplementing OAuth; the genuine additions are the
+revocation ledger, its enforcement, and (still to come) the self-test.
+
+Modules shipped:
+
+- `tokens.py` — `TokenStore` Protocol + `InMemoryTokenStore` (the ledger).
+- `verifier.py` — `enforce_revocation()` and `RevocationTokenVerifier`, which
+  wrap any `TokenVerifier` so the ledger is checked at `verify_token`, the point
+  FastMCP hits on every request. This is the primary enforcement chokepoint: a
+  revoked token fails auth everywhere, immediately, even past the provider cache.
+- `oauth.py` — `OAuth.github(...)` façade → a `GitHubProvider` subclass with the
+  ledger spliced into `verify_token`, a `RevocationMiddleware` (per-call deny),
+  and `logout()` / `revoke()` for the app to call on disconnect.
+
+Still open for v1: automatic revoke-on-*disconnect* wiring (only programmatic
+`logout()` exists today — no confirmed FastMCP session-end hook yet), `prompt`
+enforcement, and the `mcp-auth-kit check` self-test.
