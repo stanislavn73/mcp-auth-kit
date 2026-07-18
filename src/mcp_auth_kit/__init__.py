@@ -9,6 +9,8 @@ v1 is deliberately small — see ``docs/design/`` and ``CLAUDE.md``.
 
 from __future__ import annotations
 
+from mcp_auth_kit.tokens import InMemoryTokenStore, TokenRecord, TokenStore
+
 __version__ = "0.1.0"
 
-__all__ = ["__version__"]
+__all__ = ["InMemoryTokenStore", "TokenRecord", "TokenStore", "__version__"]
