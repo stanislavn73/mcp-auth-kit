@@ -114,6 +114,12 @@ class TokenStore(Protocol):
         revoked."""
         ...
 
+    async def is_revoked(self, access_token: str) -> bool:
+        """Whether this token was explicitly revoked. Distinguishes a killed
+        token from one that is merely unknown — the verifier needs that
+        difference to allow first-sight tokens while rejecting revoked ones."""
+        ...
+
 
 class InMemoryTokenStore:
     """Process-memory :class:`TokenStore` for single-process servers and tests.
@@ -156,6 +162,9 @@ class InMemoryTokenStore:
         # Copy the key set first: _revoke_key mutates _by_subject as it goes.
         keys = list(self._by_subject.get(subject, ()))
         return sum(self._revoke_key(key) for key in keys)
+
+    async def is_revoked(self, access_token: str) -> bool:
+        return _digest(access_token) in self._revoked
 
     def _revoke_key(self, key: str) -> bool:
         """Mark ``key`` revoked and unindex it. Returns whether it was live."""

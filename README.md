@@ -60,16 +60,39 @@ uv sync
 
 ## Quickstart
 
-> _Coming with the first middleware release. The interface is being designed in
-> [`docs/design/`](docs/design/) — feedback welcome via issues._
+> _Early API — expect changes. The `check` self-test is not built yet._
 
 ```python
-# Sketch — API not final.
 from fastmcp import FastMCP
-from mcp_auth_kit import require_oauth  # not yet implemented
+from mcp_auth_kit import OAuth
 
-mcp = FastMCP("my-server")
-mcp.add_middleware(require_oauth(...))
+# Ledger-backed GitHub OAuth. FastMCP runs the OAuth dance; mcp-auth-kit adds
+# the revocation ledger and enforces it on every request.
+auth = OAuth.github(
+    client_id="...",
+    client_secret="...",
+    base_url="https://my-server.example.com",  # this server's public URL
+    scopes=["read:user"],
+)
+
+mcp = FastMCP("my-server", auth=auth.provider())
+mcp.add_middleware(auth.middleware())
+
+# When a user logs out or disconnects, kill their tokens — a revoked token
+# fails on its very next request, with no TTL grace window:
+#     await auth.logout(subject)     # revoke every token for a principal
+#     await auth.revoke(access_token)
+```
+
+Using a plain `TokenVerifier` (e.g. JWT) instead of GitHub? Wrap it to get the
+same revocation guarantee:
+
+```python
+from mcp_auth_kit import InMemoryTokenStore, RevocationTokenVerifier
+
+store = InMemoryTokenStore()
+verifier = RevocationTokenVerifier(my_jwt_verifier, store)
+mcp = FastMCP("my-server", auth=verifier)
 ```
 
 ## Development
